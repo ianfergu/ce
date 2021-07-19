@@ -125,6 +125,8 @@ if (! jSuites && typeof(require) === 'function') {
             allowDeleteColumn:true,
             // Allow rename column
             allowRenameColumn:true,
+            // Allow change column type,
+            allowChangeType: true,
             // Allow comments
             allowComments:false,
             // Global wrap
@@ -208,6 +210,7 @@ if (! jSuites && typeof(require) === 'function') {
             onfocus:null,
             onblur:null,
             onchangeheader:null,
+            onchangetype:null,
             oncreateeditor:null,
             oneditionstart:null,
             oneditionend:null,
@@ -233,6 +236,8 @@ if (! jSuites && typeof(require) === 'function') {
                 search: 'Search',
                 entries: ' entries',
                 columnName: 'Column name',
+                columnType: 'Column type',
+                changeThisColumnType: 'Change columns type',
                 insertANewColumnBefore: 'Insert a new column before',
                 insertANewColumnAfter: 'Insert a new column after',
                 deleteSelectedColumns: 'Delete selected columns',
@@ -1333,6 +1338,9 @@ if (! jSuites && typeof(require) === 'function') {
             }
             if (obj.options.columns[colNumber].id) {
                 obj.headers[colNumber].setAttribute('id', obj.options.columns[colNumber].id);
+            }
+            if (obj.options.columns[colNumber].type) {
+                obj.headers[colNumber].setAttribute('type', obj.options.columns[colNumber].type);
             }
 
             // Width control
@@ -3392,6 +3400,41 @@ if (! jSuites && typeof(require) === 'function') {
             }
 
             return asArray ? title : title.join(obj.options.csvDelimiter);
+        }
+
+
+        /**
+         * Change the column type
+         *
+         * @param column - column number (first column is: 0)
+         * @param Type - new column type
+         */
+         obj.setType = function(column, newValue) {
+            if (obj.headers[column]) {
+                var oldValue = obj.options.columns[column].type;
+
+                if (! newValue) {
+                    newValue = prompt(obj.options.text.columnType, oldValue);
+                }
+
+                if (newValue) {
+                    obj.options.columns[column].type = newValue;
+                    // Keep the title property
+                    obj.headers[column].setAttribute('type', newValue);
+                    // Update title
+                    // obj.options.columns[column].title = newValue;
+                }
+
+                obj.setHistory({
+                    action: 'setType',
+                    column: column,
+                    oldValue: oldValue,
+                    newValue: newValue
+                });
+
+                // On onchange header
+                obj.dispatch('onchangetype', el, column, oldValue, newValue);
+            }
         }
 
         /**
@@ -6855,6 +6898,15 @@ if (! jSuites && typeof(require) === 'function') {
                 var items = [];
 
                 if (y == null) {
+
+                    items.push({
+                        title: "Column Name: " + obj.options.columns[x].title,
+                    });
+
+                    items.push({
+                        title: "Column Type: " + obj.options.columns[x].type,
+                    });
+
                     // Insert a new column
                     if (obj.options.allowInsertColumn == true) {
                         items.push({
@@ -6892,6 +6944,16 @@ if (! jSuites && typeof(require) === 'function') {
                                 obj.setHeader(x);
                             }
                         });
+                    }
+
+                    // Change column type
+                    if (obj.options.allowChangeType == true) {
+                        items.push({
+                            title:obj.options.text.changeThisColumnType,
+                            onclick:function() {
+                                obj.setType(x);
+                            }
+                        })
                     }
 
                     // Sorting
